@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request New Product</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Additional styles for new fields */
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        select, input[type="number"], input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            border: 2px solid transparent;
+            border-top: 2px solid #000;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Request New Product</h1>
+        <form id="productRequestForm">
+            <div class="form-group">
+                <label for="productName" class="required">Product Name</label>
+                <input type="text" id="productName" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" rows="4"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category" class="required">Category</label>
+                    <select id="category" required>
+                        <option value="">Select a category</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="supplier" class="required">Supplier</label>
+                    <select id="supplier" required>
+                        <option value="">Select a supplier</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="price">Suggested Price (₹)</label>
+                    <input type="number" id="price" min="0" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity" class="required">Quantity</label>
+                    <input type="number" id="quantity" min="1" value="1" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span id="submitText">Submit Request</span>
+            </button>
+        </form>
+        <div id="message" class="message"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const form = document.getElementById('productRequestForm');
+            const messageDiv = document.getElementById('message');
+            const categorySelect = document.getElementById('category');
+            const supplierSelect = document.getElementById('supplier');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            
+            // Show loading state
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    submitBtn.disabled = true;
+                    submitText.innerHTML = `<span class="loading"></span> Submitting...`;
+                } else {
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'Submit Request';
+                }
+            }
+            
+            // Load data from API with retry logic
+            async function fetchWithRetry(url, options = {}, retries = 3) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (err) {
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return fetchWithRetry(url, options, retries - 1);
+                    }
+                    throw err;
+                }
+            }
+            
+            // Load categories from backend
+            async function loadCategories() {
+                try {
+                    const data = await fetchWithRetry('/api/categories');
+                    
+                    // Clear existing options except the first one
+                    while (categorySelect.options.length > 1) {
+                        categorySelect.remove(1);
+                    }
+                    
+                    // Add new options
+                    data.categories.forEach(category => {
+                        const option = new Option(category.category_name, category.category_id);
+                        categorySelect.add(option);
+                    });
+                } catch (err) {
+                    console.error('Error loading categories:', err);
+                    showMessage('Failed to load categories. Please refresh the page.', 'error');
+                }
+            }
+            
+            // Load suppliers from backend
+            async function loadSuppliers() {
+                try {
+                    const data = await fetchWithRetry('/api/suppliers');
+                    
+                    // Clear existing options except the first one
+                    while (supplierSelect.options.length > 1) {
+                        supplierSelect.remove(1);
+                    }
+                    
+                    // Add new options
+                    data.suppliers.forEach(supplier => {
+                        const option = new Option(supplier.supplier_name, supplier.supplier_id);
+                        supplierSelect.add(option);
+                    });
+                } catch (err) {
+                    console.error('Error loading suppliers:', err);
+                    showMessage('Failed to load suppliers. Please refresh the page.', 'error');
+                }
+            }
+            
+            // Load both categories and suppliers
+            await Promise.all([loadCategories(), loadSuppliers()]);
+            
+            // Handle form submission
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                const productName = document.getElementById('productName').value.trim();
+                const description = document.getElementById('description').value.trim();
+                const categoryId = document.getElementById('category').value;
+                const supplierId = document.getElementById('supplier').value;
+                const price = parseFloat(document.getElementById('price').value) || 0;
+                const quantity = parseInt(document.getElementById('quantity').value) || 1;
+                
+                // Validation
+                if (!productName || !categoryId || !supplierId || !quantity) {
+                    showMessage('Please fill all required fields', 'error');
+                    setLoading(false);
+                    return;
+                }
+                
+                if (quantity < 1) {
+                    showMessage('Quantity must be at least 1', 'error');
+                    setLoading(false);
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/product-requests', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            product_name: productName,
+                            description,
+                            category_id: categoryId,
+                            supplier_id: supplierId,
+                            suggested_price: price,
+                            quantity,
+                            requested_by: 1
+                        })
+                    });
+                    
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Invalid response from server');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to submit request');
+                    }
+                    
+                    showMessage('Product request submitted successfully! Admin will review your request.', 'success');
+                    form.reset();
+                    categorySelect.selectedIndex = 0;
+                    supplierSelect.selectedIndex = 0;
+                } catch (err) {
+                    console.error('Error submitting request:', err);
+                    showMessage(err.message || 'Failed to submit request. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            });
+            
+            // Helper function to show messages
+            function showMessage(text, type) {
+                messageDiv.textContent = text;
+                messageDiv.className = `message ${type}`;
+                messageDiv.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        messageDiv.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 8px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            Customer Management
+            <button id="addCustomerBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Customer
+            </button>
+        </h1>
+        
+        <div id="message" class="message"></div>
+        
+        <table id="customersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>City</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Customers will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Add/Edit Customer Modal -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Add New Customer</h2>
+            <div id="formMessage" class="message error" style="display: none;"></div>
+            <form id="customerForm">
+                <input type="hidden" id="customerId">
+                
+                <div class="form-group">
+                    <label for="name" class="required">Name</label>
+                    <input type="text" id="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="text" id="phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city">
+                </div>
+                
+                <div class="form-group">
+                    <label for="postalCode">Postal Code</label>
+                    <input type="text" id="postalCode">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('customerModal');
+            const addBtn = document.getElementById('addCustomerBtn');
+            const closeBtn = document.querySelector('.close');
+            const customerForm = document.getElementById('customerForm');
+            const customersTable = document.getElementById('customersTable').getElementsByTagName('tbody')[0];
+            const messageDiv = document.getElementById('message');
+            
+            let customers = [];
+            let isEditMode = false;
+            
+            // Event Listeners
+            addBtn.addEventListener('click', openAddModal);
+            closeBtn.addEventListener('click', closeModal);
+            customerForm.addEventListener('submit', handleFormSubmit);
+            
+            // Load customers when page loads
+            loadCustomers();
+            
+            // Functions
+            function loadCustomers() {
+                fetch('/api/customers')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to load customers');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        customers = data;
+                        renderCustomers();
+                    })
+                    .catch(error => {
+                        showMessage(error.message, 'error');
+                        console.error('Error:', error);
+                    });
+            }
+            
+            function renderCustomers() {
+                customersTable.innerHTML = '';
+                
+                if (customers.length === 0) {
+                    const row = customersTable.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.colSpan = 6;
+                    cell.textContent = 'No customers found';
+                    cell.style.textAlign = 'center';
+                    return;
+                }
+                
+                customers.forEach(customer => {
+                    const row = customersTable.insertRow();
+                    
+                    row.insertCell(0).textContent = customer.customer_id;
+                    row.insertCell(1).textContent = customer.name;
+                    row.insertCell(2).textContent = customer.email || '-';
+                    row.insertCell(3).textContent = customer.phone || '-';
+                    row.insertCell(4).textContent = customer.city || '-';
+                    
+                    const actionsCell = row.insertCell(5);
+                    actionsCell.className = 'action-buttons';
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-primary';
+                    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                    editBtn.onclick = () => openEditModal(customer);
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn btn-danger';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                    deleteBtn.onclick = () => deleteCustomer(customer.customer_id);
+                    
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            }
+            
+            function openAddModal() {
+                isEditMode = false;
+                document.getElementById('modalTitle').textContent = 'Add New Customer';
+                customerForm.reset();
+                modal.style.display = 'block';
+            }
+            
+            function openEditModal(customer) {
+                isEditMode = true;
+                document.getElementById('modalTitle').textContent = 'Edit Customer';
+                
+                document.getElementById('customerId').value = customer.customer_id;
+                document.getElementById('name').value = customer.name;
+                document.getElementById('email').value = customer.email || '';
+                document.getElementById('phone').value = customer.phone || '';
+                document.getElementById('address').value = customer.address || '';
+                document.getElementById('city').value = customer.city || '';
+                document.getElementById('postalCode').value = customer.postal_code || '';
+                
+                modal.style.display = 'block';
+            }
+            
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+            
+            function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim() || null;
+    const phone = document.getElementById('phone').value.trim() || null;
+    const address = document.getElementById('address').value.trim() || null;
+    const city = document.getElementById('city').value.trim() || null;
+    const postalCode = document.getElementById('postalCode').value.trim() || null;
+    const formMessage = document.getElementById('formMessage');
+
+    // Reset message
+    formMessage.style.display = 'none';
+    formMessage.textContent = '';
+
+    // Validation
+    const errors = [];
+
+    if (!name) errors.push('Name is required.');
+
+    if (phone && !/^\d{10}$/.test(phone)) {
+        errors.push('Phone number must be exactly 10 digits.');
+    }
+
+    if (postalCode && !/^\d{6}$/.test(postalCode)) {
+        errors.push('Postal code must be exactly 6 digits.');
+    }
+
+    if (errors.length > 0) {
+        formMessage.textContent = errors.join(' ');
+        formMessage.style.display = 'block';
+        return;
+    }
+
+    const customerData = {
+        name,
+        email,
+        phone,
+        address,
+        city,
+        postal_code: postalCode
+    };
+
+    const url = isEditMode 
+        ? `/api/customers/${document.getElementById('customerId').value}`
+        : '/api/customers';
+
+    const method = isEditMode ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { 
+                throw new Error(err.error || 'Failed to save customer');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showMessage(data.message, 'success');
+        closeModal();
+        loadCustomers();
+    })
+    .catch(error => {
+        formMessage.textContent = error.message;
+        formMessage.style.display = 'block';
+        console.error('Error:', error);
+    });
+}
+            
+            function deleteCustomer(customerId) {
+                if (!confirm('Are you sure you want to delete this customer?')) {
+                    return;
+                }
+                
+                fetch(`/api/customers/${customerId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.error); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    showMessage(data.message, 'success');
+                    loadCustomers();
+                })
+                .catch(error => {
+                    showMessage(error.message, 'error');
+                    console.error('Error:', error);
+                });
+            }
+            
+            function showMessage(text, type) {
+                messageDiv.textContent = text;
+                messageDiv.className = `message ${type}`;
+                messageDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Close modal when clicking outside of it
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    closeModal();
+                }
+            };
+        });
+    </script>
+</body>
+</html>

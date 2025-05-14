@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shopping Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* Category summary cards */
+        .category-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .category-card {
+            background-color: #ffffff;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            width: 180px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .category-card:hover {
+            transform: translateY(-5px);
+            background-color: #e8f5e9;
+        }
+        .category-card h3 {
+            margin: 10px 0;
+            color: #4CAF50;
+        }
+        .category-card p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        /* Product grid */
+        .product-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .product-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            width: 200px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .product-card h2 {
+            font-size: 18px;
+            margin: 10px 0 5px;
+            text-align: center;
+        }
+        .product-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+        .product-card button {
+            margin-top: 5px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 90%;
+        }
+        .buy-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .cart-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Product Catalog</h1>
+
+    <!-- Category summary -->
+    <div id="category-container" class="category-grid">
+        <!-- Category cards will be injected here -->
+    </div>
+
+    <!-- Product list -->
+    <div id="product-container" class="product-grid">
+        <!-- Product cards will be injected here -->
+    </div>
+
+    <script>
+        let allProducts = [];
+
+// Fetch category summary and products
+function loadCategoriesAndProducts() {
+    fetch('/category-summary')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('category-container');
+            container.innerHTML = '';
+            if (data.success && data.summary.length > 0) {
+                // Add "All Categories" card
+                const allCard = document.createElement('div');
+                allCard.classList.add('category-card');
+                allCard.innerHTML = `<h3>All Categories</h3>`;
+                allCard.addEventListener('click', () => displayProducts(allProducts));
+                container.appendChild(allCard);
+
+                // Add category cards
+                data.summary.forEach(category => {
+                    const card = document.createElement('div');
+                    card.classList.add('category-card');
+                    card.innerHTML = `
+                        <h3>${category.category_name}</h3>
+                        <p>${category.item_count} items</p>
+                    `;
+                    card.addEventListener('click', () => {
+                        const filtered = allProducts.filter(p => p.category_id === category.category_id);
+                        displayProducts(filtered);
+                    });
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p>No category summary available.</p>';
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching category summary:', err);
+            document.getElementById('category-container').innerHTML = '<p>Failed to load categories.</p>';
+        });
+
+    fetch('/products')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.products.length > 0) {
+                allProducts = data.products;
+                displayProducts(allProducts);
+            } else {
+                document.getElementById('product-container').innerHTML = '<p>No products available.</p>';
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching products:', err);
+            document.getElementById('product-container').innerHTML = '<p>Failed to load products.</p>';
+        });
+}
+
+function displayProducts(products) {
+    const container = document.getElementById('product-container');
+    container.innerHTML = '';
+    if (products.length === 0) {
+        container.innerHTML = '<p>No products in this category.</p>';
+        return;
+    }
+    products.forEach(product => {
+        const card = document.createElement('div');
+        card.classList.add('product-card');
+        card.innerHTML = `
+            <img src="images.jpg" alt="Product Image">
+            <h2>${product.name}</h2>
+            <p><strong>Brand:</strong> ${product.brand}</p>
+            <p><strong>Price:</strong> $${product.price_per_unit}</p>
+            <p><strong>Stock:</strong> ${product.stock_quantity}</p>
+            <button class="buy-btn">Buy</button>
+            <button class="cart-btn">Add to Cart</button>
+        `;
+        // Add button handlers (you can expand these later)
+        card.querySelector('.buy-btn').addEventListener('click', () => {
+            alert(`Buying ${product.name}`);
+        });
+        card.querySelector('.cart-btn').addEventListener('click', () => {
+            alert(`${product.name} added to cart`);
+        });
+        container.appendChild(card);
+    });
+}
+
+// Initialize page
+loadCategoriesAndProducts();
+
+    </script>
+</body>
+</html>
